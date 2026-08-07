@@ -33,8 +33,12 @@ const ProductSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  timestamps: true // Date created and updated timestamps will be automatically added to the schema
-});
+}, 
+{timestamps: true} // Date created and updated timestamps will be automatically added to the schema
+); 
 
 // Create model from the schema
 const Product = mongoose.model('Product', ProductSchema);
+
+module.exports = Product; // Export the Product model for use in other files
+
