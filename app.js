@@ -13,12 +13,14 @@ connectDB();
 
 
 const productRoutes = require("./Routes/ProductRoutes");
+const userRoutes = require("./Routes/UserRoute");
 
 // Middleware
 app.use(express.json());
 
 // Routes
 app.use("/products", productRoutes);
+app.use("/users", userRoutes);
 
 // Port
 const PORT = process.env.PORT || 8000;

@@ -29,9 +29,13 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'superadmin', 'manager', 'storekeeper'],
     required: true,
     default: 'user'
+  },
+  HasAdminAccess: {
+    type: Boolean,
+    default: false
   },
 },
   {timestamps: true}// Date created and updated timestamps will be automatically added to the schema
