@@ -9,13 +9,14 @@ const generateToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
-      role: user.role,
+      name: user.fullname,
       email: user.email,
+      role: user.role,
       HasAdminAccess: user.HasAdminAccess,
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+      expiresIn: process.env.JWT_EXPIRES_IN || "1h",
     }
   );
 };
@@ -23,12 +24,14 @@ const generateToken = (user) => {
 // Register User
 exports.createuser = async (req, res) => {
   try {
-    let {
+    const {
       fullname,
       email,
       password,
       gender,
       phone,
+      role,
+      HasAdminAccess,
     } = req.body;
 
     // Validate required fields
@@ -39,17 +42,17 @@ exports.createuser = async (req, res) => {
       });
     }
 
-    email = email.trim().toLowerCase();
-    phone = phone.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = phone.trim();
 
     // Check if email or phone already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { phone }],
+      $or: [{ email: normalizedEmail }, { phone: normalizedPhone }],
     });
 
     if (existingUser) {
       const field =
-        existingUser.email === email
+        existingUser.email === normalizedEmail
           ? "Email"
           : "Phone number";
 
@@ -76,12 +79,12 @@ exports.createuser = async (req, res) => {
     // Create user
     const user = await User.create({
       fullname: fullname.trim(),
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       gender: gender.trim(),
-      phone,
-      role: "user",
-      HasAdminAccess: false,
+      phone: normalizedPhone,
+      role: role || "user", // Default role is set to 'user'
+      HasAdminAccess: HasAdminAccess || false, // Default is false
     });
 
     // Remove password from response
@@ -149,7 +152,7 @@ exports.loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: "Invalid password.",
+        message: "Invalid credentials.",
       });
     }
 
@@ -161,7 +164,7 @@ exports.loginUser = async (req, res) => {
       success: true,
       message: "Login successful.",
       token: generateToken(user),
-      user: userResponse,
+      role: user.role,
     });
 
   } catch (error) {
@@ -250,6 +253,10 @@ exports.updateUser = async (req, res) => {
 
     const user = await User.findById(req.params.id);
 
+    // console.log("REQ.USER:", req.user);
+    // console.log("REQUESTED ROLE:", role);
+    // console.log("CURRENT DATABASE ROLE:", user.role);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -303,8 +310,8 @@ exports.updateUser = async (req, res) => {
       user.gender = gender.trim();
     }
 
-    // Admin fields
-    if (req.user && req.user.role === "admin") {
+    // Update fields
+    if (req.user && req.user.role === "Admin") {
       if (role) {
         user.role = role;
       }
