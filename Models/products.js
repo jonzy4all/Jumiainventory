@@ -33,6 +33,11 @@ const ProductSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  image: {
+    type: String,
+    required: false
+    
+  }
 }, 
 {timestamps: true} // Date created and updated timestamps will be automatically added to the schema
 ); 

@@ -6,7 +6,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "jumia",
-    allowed_formats: ["jpg", "jpeg", "png", "gif"],
+    allowed_formats: ["jpg", "jpeg", "png", "gif", "mp4"],
     transformation: [
       {
         width: 500,

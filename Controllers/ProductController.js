@@ -1,43 +1,113 @@
 const Product = require("../Models/products"); // Import the Product model
-
+const sendEmail = require("../Middleware/Emailsender"); // Import the email sender middleware
 
 // Create a new product
-exports.createProduct = async (req, res) => {
+// exports.createProduct = async (req, res) => {
+//   try {
+//     // Check if all required fields are provided
+//     if (!req.body.name || !req.body.description || !req.body.price || !req.body.category || !req.body.size || req.body.quantity === undefined) {
+//       return res.status(400).json({
+//         message: "Please provide all required fields",
+//       });
+//     }
+//     const {
+//       name,
+//       description,
+//       price,
+//       category,
+//       inStock,
+//       size,
+//       quantity,
+//     } = req.body;
+
+//     const newProduct = new Product({
+//       name,
+//       description,
+//       price,
+//       category,
+//       inStock,
+//       size,
+//       quantity,
+//     });
+
+//     await newProduct.save();
+
+//     res.status(201).json({
+//       message: "Product created successfully",
+//       product: newProduct,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       message: "Error creating product",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// create a product with image upload
+exports.createProductwithimage = async (req, res) => {
   try {
-    // Check if all required fields are provided
-    if (!req.body.name || !req.body.description || !req.body.price || !req.body.category || !req.body.size || req.body.quantity === undefined) {
+    const {
+      name,
+      size,
+      description,
+      price,
+      category,
+      inStock,
+      quantity,
+      image,
+    } = req.body;
+
+    if (
+      !name ||
+      !size ||
+      !description ||
+      price === undefined ||
+      !category ||
+      quantity === undefined
+    ) {
       return res.status(400).json({
         message: "Please provide all required fields",
       });
     }
-    const {
-      name,
-      description,
-      price,
-      category,
-      inStock,
-      size,
-      quantity,
-    } = req.body;
 
-    const newProduct = new Product({
+    // if (!req.file) {
+    //   return res.status(400).json({
+    //     message: "Please upload an image",
+    //   });
+    // }
+
+    const product = new Product({
       name,
+      size,
       description,
       price,
       category,
       inStock,
-      size,
       quantity,
+       image: req.file ? req.file.path : null,
     });
 
-    await newProduct.save();
+    await product.save();
 
-    res.status(201).json({
+    // send email notification about the new product
+    const emailSubject = "New Product Created";
+    const emailText = `A new product has been created.
+    "${name}",
+    "${size}",
+    "${description}",
+    "${price}",
+    "${category}",
+    "${quantity}"`;
+    await sendEmail("jonzy4all@yahoo.com", emailSubject, emailText);
+
+
+    return res.status(201).json({
       message: "Product created successfully",
-      product: newProduct,
+      product,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Error creating product",
       error: error.message,
     });
