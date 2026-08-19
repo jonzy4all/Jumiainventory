@@ -1,5 +1,5 @@
 const Product = require("../Models/products"); // Import the Product model
-const sendEmail = require("../Middleware/Emailsender"); // Import the email sender middleware
+const sendEmail = require("../Config/EmailConfig"); // Import the email sender middleware
 
 // Create a new product
 // exports.createProduct = async (req, res) => {
@@ -85,20 +85,14 @@ exports.createProductwithimage = async (req, res) => {
       category,
       inStock,
       quantity,
-       image: req.file ? req.file.path : null,
+      image: req.file ? req.file.path : null,
     });
 
     await product.save();
 
     // send email notification about the new product
     const emailSubject = "New Product Created";
-    const emailText = `A new product has been created.
-    "${name}",
-    "${size}",
-    "${description}",
-    "${price}",
-    "${category}",
-    "${quantity}"`;
+    const emailText = `A new product has been created:\n\nName: ${name}\nSize: ${size}\nDescription: ${description}\nPrice: ${price}\nCategory: ${category}\nIn Stock: ${inStock}\nQuantity: ${quantity}`;
     await sendEmail("jonzy4all@yahoo.com", emailSubject, emailText);
 
 
