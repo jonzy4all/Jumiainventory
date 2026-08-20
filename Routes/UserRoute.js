@@ -3,20 +3,30 @@ const router = express.Router();
 
 const UserController = require('../Controllers/UserController');
 
-// import the authentication middleware
+// import the Authentication middleware
+const { protect } = require("../Middleware/Auth");
+
+// import the Authorization middleware
 const { authorize } = require("../Middleware/Role");
 
-// define routes for user-related operations
+// define routes public routes
 router.post('/createuser', UserController.createuser);
 router.post("/loginuser", UserController.loginUser);
 
-// // Current logged-in user
-// router.get('/me', UserController.getMe);
+// Current logged-in user
+router.get('/me', protect, UserController.getMe);
 
-// Users
-router.get('/getAllUser', UserController.getAllUsers);
-router.get('/getUserById/:id', UserController.getUserById);
-router.put('/updateUser/:id', authorize('Admin' , 'manager'), UserController.updateUser);
-router.delete('/deleteUser/:id', authorize('Admin' , 'manager'), UserController.deleteUser);
+// Update the currently logged-in user's
+// own email and password
+router.put("/update-my-account", protect, UserController.updateMyAccount);
+
+// ===============================
+// ADMIN / MANAGER ROUTES
+// ===============================
+router.get('/getAllUser', protect, authorize('Admin', 'manager'), UserController.getAllUsers); // Get all users
+router.get('/getUserById/:id', protect, authorize('Admin', 'manager'), UserController.getUserById); // Get a specific user
+router.put('/updateUser/:id', protect, authorize('Admin' , 'manager'), UserController.updateUser); // Admin/manager updates another user
+router.delete('/deleteUser/:id', protect, authorize('Admin' , 'manager'), UserController.deleteUser); // Admin/manager deletes another user
 
 module.exports = router;
+

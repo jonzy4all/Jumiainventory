@@ -239,23 +239,40 @@ exports.getUserById = async (req, res) => {
 
 
 // Update User
+// Admin/manager only
 exports.updateUser = async (req, res) => {
   try {
     const {
       fullname,
       email,
-      password,
       gender,
       phone,
       role,
       HasAdminAccess,
+      password, // included only so we can reject it
     } = req.body;
 
-    const user = await User.findById(req.params.id);
+    // Check if the logged-in user is authorized
+    if (
+      !req.user ||
+      !["Admin", "manager"].includes(req.user.role)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Only Admin or manager can update users.",
+      });
+    }
 
-    // console.log("REQ.USER:", req.user);
-    // console.log("REQUESTED ROLE:", role);
-    // console.log("CURRENT DATABASE ROLE:", user.role);
+    // Prevent Admin/manager from changing another user's password
+    if (password !== undefined) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot change another user's password.",
+      });
+    }
+
+    // Find the user being updated
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -264,7 +281,9 @@ exports.updateUser = async (req, res) => {
       });
     }
 
-    // Update email
+    // =========================
+    // UPDATE EMAIL
+    // =========================
     if (email) {
       const normalizedEmail = email.trim().toLowerCase();
 
@@ -283,7 +302,9 @@ exports.updateUser = async (req, res) => {
       user.email = normalizedEmail;
     }
 
-    // Update phone
+    // =========================
+    // UPDATE PHONE
+    // =========================
     if (phone) {
       const normalizedPhone = phone.trim();
 
@@ -302,42 +323,38 @@ exports.updateUser = async (req, res) => {
       user.phone = normalizedPhone;
     }
 
+    // =========================
+    // UPDATE FULLNAME
+    // =========================
     if (fullname) {
       user.fullname = fullname.trim();
     }
 
+    // =========================
+    // UPDATE GENDER
+    // =========================
     if (gender) {
       user.gender = gender.trim();
     }
 
-    // Update fields
-    if (req.user && req.user.role === "Admin") {
-      if (role) {
-        user.role = role;
-      }
-
-      if (typeof HasAdminAccess === "boolean") {
-        user.HasAdminAccess = HasAdminAccess;
-      }
+    // =========================
+    // UPDATE ROLE
+    // =========================
+    if (role) {
+      user.role = role;
     }
 
-    // Update password
-    if (password) {
-      if (password.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "Password must be at least 6 characters long.",
-        });
-      }
-
-      user.password = await bcrypt.hash(
-        password,
-        SALT_ROUNDS
-      );
+    // =========================
+    // UPDATE ADMIN ACCESS
+    // =========================
+    if (typeof HasAdminAccess === "boolean") {
+      user.HasAdminAccess = HasAdminAccess;
     }
 
+    // Save changes
     const updatedUser = await user.save();
 
+    // Remove password from response
     const userResponse = updatedUser.toObject();
     delete userResponse.password;
 
@@ -348,8 +365,9 @@ exports.updateUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Update Error:", error);
+    console.error("Update User Error:", error);
 
+    // Invalid MongoDB ID
     if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
@@ -357,6 +375,7 @@ exports.updateUser = async (req, res) => {
       });
     }
 
+    // Duplicate email/phone
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -429,6 +448,124 @@ exports.getMe = async (req, res) => {
 
   } catch (error) {
     console.error("GetMe Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+// Update Current Logged-in User's Email and Password
+exports.updateMyAccount = async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+
+    // Get the logged-in user's ID from the JWT
+    const userId = req.user.id;
+
+    // Find the logged-in user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // Make sure at least one field is provided
+    if (!email && !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide an email or new password.",
+      });
+    }
+
+    // =====================================
+    // UPDATE EMAIL
+    // =====================================
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Check whether another user already has this email
+      const existingUser = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: userId },
+      });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already exists.",
+        });
+      }
+
+      user.email = normalizedEmail;
+    }
+
+    // =====================================
+    // UPDATE PASSWORD
+    // =====================================
+    if (newPassword) {
+      // Current password must be provided
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password is required.",
+        });
+      }
+
+      // Verify current password
+      const passwordMatch = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+
+      if (!passwordMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect.",
+        });
+      }
+
+      // Validate new password
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 6 characters long.",
+        });
+      }
+
+      // Hash new password
+      user.password = await bcrypt.hash(
+        newPassword,
+        SALT_ROUNDS
+      );
+    }
+
+    // Save changes
+    const updatedUser = await user.save();
+
+    // Remove password from response
+    const userResponse = updatedUser.toObject();
+    delete userResponse.password;
+
+    return res.status(200).json({
+      success: true,
+      message: "Your account has been updated successfully.",
+      user: userResponse,
+    });
+
+  } catch (error) {
+    console.error("Update My Account Error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already exists.",
+      });
+    }
 
     return res.status(500).json({
       success: false,
