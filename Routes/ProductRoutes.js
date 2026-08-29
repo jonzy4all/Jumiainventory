@@ -8,7 +8,7 @@ const { protect } = require("../Middleware/Auth");
 const { authorize } = require("../Middleware/Role");
 
 // Import the upload middleware
-const upload = require("../Middleware/upload"); 
+const upload = require("../Middleware/Upload"); 
 
 // Import the product controller
 const productController = require('../Controllers/ProductController');
