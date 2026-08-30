@@ -25,7 +25,7 @@ router.put("/update-my-account", protect, UserController.updateMyAccount);
 // ===============================
 router.get('/getAllUser', protect, authorize('Admin', 'manager'), UserController.getAllUsers); // Get all users
 router.get('/getUserById/:id', protect, authorize('Admin', 'manager'), UserController.getUserById); // Get a specific user
-router.put('/updateUser/:id', protect, authorize('Admin' , 'manager', 'User'), UserController.updateUser); // Admin/manager updates another user
+router.put('/updateUser/:id', protect, authorize('Admin' , 'manager'), UserController.updateUser); // Admin/manager updates another user
 router.delete('/deleteUser/:id', protect, authorize('Admin' , 'manager'), UserController.deleteUser); // Admin/manager deletes another user
 
 module.exports = router;
