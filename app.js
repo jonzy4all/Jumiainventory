@@ -14,9 +14,6 @@ const inventoryRoutes = require("./Routes/ExternalApiControllerRoute");
 const productRoutes = require("./Routes/ProductRoutes");
 const userRoutes = require("./Routes/UserRoute");
 
-// Connect to MongoDB
-connectDB();
-
 // Middleware
 app.use(express.json());
 
@@ -59,8 +56,20 @@ app.use((err, req, res, next) => {
 // Port
 const PORT = process.env.PORT || 8000;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Inventory API: http://localhost:${PORT}`);
-});
+// Start server only after MongoDB connects
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Inventory API: http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
+
