@@ -106,6 +106,13 @@ exports.createProductwithimage = async (req, res) => {
       success: true, message: "Product created successfully", 
       product, 
     });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error creating product",
+      error: error.message,
+    });
+  }
+};
 
 // Update a product
 exports.updateProduct = async (req, res) => {
