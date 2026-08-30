@@ -93,20 +93,19 @@ exports.createProductwithimage = async (req, res) => {
     // send email notification about the new product
     const emailSubject = "New Product Created";
     const emailText = `A new product has been created:\n\nName: ${name}\nSize: ${size}\nDescription: ${description}\nPrice: ${price}\nCategory: ${category}\nIn Stock: ${inStock}\nQuantity: ${quantity}`;
-    await sendEmail("jonzy4all@yahoo.com", emailSubject, emailText);
+    
+    try { 
+      await sendEmail("jonzy4all@yahoo.com", emailSubject, emailText); 
+      console.log("Product notification email sent successfully."); 
+    } catch (emailError) { 
+      // Email failure should NOT make product creation fail 
+      console.error("Product was created, but email notification failed:", emailError.message); 
+    } 
 
-
-    return res.status(201).json({
-      message: "Product created successfully",
-      product,
+    return res.status(201).json({ 
+      success: true, message: "Product created successfully", 
+      product, 
     });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error creating product",
-      error: error.message,
-    });
-  }
-};
 
 // Update a product
 exports.updateProduct = async (req, res) => {

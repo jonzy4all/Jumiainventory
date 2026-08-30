@@ -1,24 +1,17 @@
 const nodemailer = require("nodemailer");
 
-// Create a transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // true for 465, false for other ports
   service: "gmail",
-
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  tls: {
-    rejectUnauthorized: false   // ← this ignores the self-signed cert
-  }
 });
 
+// Verify SMTP connection
 transporter.verify((error, success) => {
   if (error) {
-    console.error("SMTP ERROR:", error);
+    console.error("SMTP ERROR:", error.message);
   } else {
     console.log("SMTP SERVER READY");
   }
@@ -33,11 +26,16 @@ const sendEmail = async (to, subject, text) => {
       text,
     };
 
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Email sent:", info.messageId);
+
+    return info;
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error sending email:", error.message);
     throw new Error("Failed to send email");
   }
 };
 
 module.exports = sendEmail;
+
